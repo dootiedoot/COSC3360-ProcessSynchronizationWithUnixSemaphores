@@ -1,0 +1,15 @@
+main()
+{
+	input_var a,b,c,d;
+	internal_var p0,p1,p2,p3,p4,p5;
+	read(a,b,c,d);
+	cobegin
+		p0 = a - b;
+		p1 = c + d;
+		p2 = a - d;
+		p3 = b * c;
+	coend;
+	p4 = (p0 + p1) * p2;
+	p5 = (p3 - p4) / p2;
+	write(a,b,c,d,p0,p1,p2,p3,p4,p5);
+}

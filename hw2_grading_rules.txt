@@ -1,0 +1,98 @@
+(70 pts)level 1: no dependencies in cobegin and coend, and only "+" "-" operations.
+main()
+{
+	input_var a,bb,c,d;
+	internal_var p0,p1,p2,p3;
+	read(a,bb,c,d);
+	cobegin
+		p0 = a - bb;
+		p1 = c + d;
+		p2 = a - d;
+	coend;
+	p3 = p0 + p1 + p2;
+	write(a,bb,c,d,p0,p1,p2,p3);
+}
+
+(80 pts)level 2: no dependencies in cobegin and coend, parenthesis and all operations such as "+" "-" "*" "/" are allowed. Be careful with "/".
+main()
+{
+	input_var a,b,cc;
+	internal_var p0,p1,p2,p3,p4,p5;
+	read(a,b,cc);
+	cobegin
+		p0 = a - b;
+		p1 = cc + d;
+		p2 = a - d;
+		p3 = b * cc;
+	coend;
+	p4 = (p0 + p1) * p2;
+	p5 = (p3 - p4) / p2;
+	write(a,b,cc,d,p0,p1,p2,p3,p4,p5);
+}
+
+
+(90 ptslevel 3: has dependencies in cobegin and coend
+main()
+{
+	input_var aa,b,c0;
+	internal_var p0,p1,p2,p3,p4,p5;
+	read(aa,b,c0);
+	cobegin
+		p0 = aa - b;
+		p1 = c0 + d;
+		p2 = p0 - d;
+		p3 = b * c0;
+	coend;
+	p4 = (p0 + p1) * p2;
+	p5 = (p3 - p4) / p2;
+	write(aa,b,c0,d,p0,p1,p2,p3,p4,p5);
+}
+
+
+(100 pts)level 4: multiple cobegin and coend
+main()
+{
+	input_var aa,b,c0;
+	internal_var p0,p1,p2,p3,p4,p5;
+	read(aa,b,c0);
+	cobegin
+		p0 = aa - b;
+		p1 = c0 + d;
+		p2 = p0 - d;
+		p3 = b * c0;
+	coend;
+	p4 = (p0 + p1) * p2;
+	cobegin
+		p2 = aa - b;
+		p1 = c0 + d;
+		p0 = p0 - d;
+		p3 = b * c0;
+	coend;
+	p5 = (p3 - p4) / p2;
+	write(aa,b,c0,d,p0,p1,p2,p3,p4,p5);
+}
+
+(110 pts)level 5: nested cobegin and coend
+main()
+{
+	input_var aa,b,c0;
+	internal_var p0,p1,p2,p3,p4,p5;
+	read(aa,b,c0);
+	cobegin
+		p0 = aa - b;
+		p1 = c0 + d;
+		cobegin
+			p2 = p0 - d;
+			p3 = b * c0;
+		coend
+	coend;
+	p4 = (p0 + p1) * p2;
+	cobegin
+		p2 = aa - b;
+		p1 = c0 + d;
+		p0 = p0 - d;
+		p3 = b * c0;
+	coend;
+	p5 = (p3 - p4) / p2;
+	write(aa,b,c0,d,p0,p1,p2,p3,p4,p5);
+}
