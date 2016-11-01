@@ -19,8 +19,25 @@ Chad Hoang
 */
 
 // Variables
+int *inputVariables;				//	Array of input variables given by the data file
 
 int main(int argc, char* argv[])
 {
+	//	Read, Evaluate, and Assign variables based in the input .txt file supplied by command argument
+	ReadFromFile(argv[1], argv[2]);
+	
 	return 0;
+}
+
+void ReadFromFile(string codeFileName, string dataFileName)
+{
+	//	input the string argument of the input file
+	fstream codeFile(codeFileName);
+	fstream dataFile(dataFileName);
+
+	//	Evaluate the input file
+	if (codeFile.is_open())
+	{
+
+	}
 }
