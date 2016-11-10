@@ -4,10 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
+#include <sstream>
 #include <string>
 #include <string.h>
 #include <vector>
-#include <sstream>
+#include <stack>
 
 using namespace std;
 
@@ -20,26 +21,47 @@ using namespace std;
 */
 
 // Variables
-struct Variable							//	Structure of the variable
+struct Variable								//	Structure of the variable
 {
 	string variableName;
 	int value;
 };
 vector<Variable> variables;			
-vector<string> processes;				//	Array of input variables given by the data file
-vector<string> concurrentInstructions;	//	Array of instructions executed by the processes
-vector<string> mainInstructions;		//	Array of instructions executed by the the main process
+struct Process								//	Structure of the process
+{
+	string processName;
+	vector<string> instructions;
+};
+vector<Process> processes;					//	Array of processes given by the input file
+vector<string> mainInstructions;			//	Array of instructions executed by the the main process
 
 //	Methods
 void ReadFromFile(string codeFileName, string dataFileName);
 vector<string> ParseVariablesIntoString(string startingString, string delimiter, string inputString);
 vector<int> ParseDataFileIntoInt(string delimiter, string delimiter2, string inputString);
+string RemoveSpaces(string input);
+int number(const char * expressionToParse);
+int factor(const char * expressionToParse);
+int term(const char * expressionToParse);
+int expression(const char * expressionToParse);
+char* ToCharArray(string input);
+string ParseExpressionVariables(string inputString);
 
 int main(int argc, char* argv[])
 {
+	cout << endl;
+	
 	//	Read, Evaluate, and Assign variables based in the input .txt file supplied by command argument
 	ReadFromFile(argv[1], argv[2]);
+
+	processes[0].instructions[0] = ParseExpressionVariables(processes[0].instructions[0]);
 	
+	cout << processes[0].instructions[0] << endl;
+
+	//cout << processes[0].instructions[0] << " equal " << expression(ToCharArray(processes[0].instructions[0])) << endl;
+	
+	cout << "1+1+1*5/5+(5+5)" << " equal " << expression("1+1+1*5/5+(5+5)") << endl;
+
 	return 0;
 }
 
@@ -76,7 +98,14 @@ void ReadFromFile(string codeFileName, string dataFileName)
 		getline(codeFile, currentInputFileLine);
 
 		//	Cache the parse variables in the string into our processes string array
-		processes = ParseVariablesIntoString(" ", ",", currentInputFileLine);
+		vector<string> inputProcesses = ParseVariablesIntoString(" ", ",", currentInputFileLine);
+		for (size_t i = 0; i < inputProcesses.size(); i++)
+		{
+			Process newProcess;
+			processes.push_back(newProcess);
+			processes[i].processName = inputProcesses[i];
+		}
+
 
 		//	Fetch next line
 		getline(codeFile, currentInputFileLine);
@@ -104,7 +133,12 @@ void ReadFromFile(string codeFileName, string dataFileName)
 
 		// Display
 		for (size_t i = 0; i < variables.size(); i++)
-			cout << "Variable " << variables[i].variableName << " has value " << variables[i].value << endl;
+			cout << "Variable " << variables[i].variableName << " = " << variables[i].value << endl;
+		cout << endl;
+
+		// Display
+		for (size_t i = 0; i < processes.size(); i++)
+			cout << "Process " << processes[i].processName << endl;
 		cout << endl;
 
 		//	Loop until "write" is found
@@ -134,7 +168,7 @@ void ReadFromFile(string codeFileName, string dataFileName)
 						break;
 					}
 					//	else if nested "cobegin" is found, repeat loop
-					else if (currentInputFileLine.find("cobegin") != std::string::npos)
+					/*else if (currentInputFileLine.find("cobegin") != std::string::npos)
 					{
 						cout << "cobegin" << endl;
 						
@@ -150,24 +184,70 @@ void ReadFromFile(string codeFileName, string dataFileName)
 								break;
 							}
 
+							//	Remove the spaces from string so its easier to parse
+							currentInputFileLine = removeSpaces(currentInputFileLine);
+							//	Remove the ";" from string so its easier to parse
+							size_t foundIndex = currentInputFileLine.find(";");
+							if (foundIndex != -1)
+								currentInputFileLine.erase(foundIndex, foundIndex);
+
+							//	Add line to instructions array
 							concurrentInstructions.push_back(currentInputFileLine);
 							cout << concurrentInstructions.back() << " " << endl;
 						}
-					}
+					}*/
 
-					concurrentInstructions.push_back(currentInputFileLine);
-					cout << concurrentInstructions.back() << " " << endl;
+					//	Remove the spaces from string so its easier to parse
+					currentInputFileLine = RemoveSpaces(currentInputFileLine);
+					//	Remove the ";" from string so its easier to parse
+					size_t pos = currentInputFileLine.find(";");
+					if (pos != -1)
+						currentInputFileLine.erase(pos, pos);
+
+					//	Find the processName and cache its position
+					size_t equalPos = currentInputFileLine.find("=");
+					string processName = currentInputFileLine.substr(0, equalPos);
+					//	Remove anything before the "=" sign so it just leaves the expression
+					currentInputFileLine.erase(0, equalPos + 1);
+
+					//	Add line to instructions array of the specific process
+					for (size_t i = 0; i < processes.size(); i++)
+					{
+						if (processName.find(processes[i].processName) != std::string::npos)
+						{
+							processes[i].instructions.push_back(currentInputFileLine);
+							break;
+						}
+					}
 				}
 			}
 			//	else, the instruction is most likey a main instruction and will be cached
 			else
 			{
+				//	Remove the spaces from string so its easier to parse
+				currentInputFileLine = RemoveSpaces(currentInputFileLine);
+				//	Remove the ";" from string so its easier to parse
+				size_t foundIndex = currentInputFileLine.find(";");
+				if (foundIndex != -1)
+					currentInputFileLine.erase(foundIndex, foundIndex);
+
+				//	Add line to instructions array
 				mainInstructions.push_back(currentInputFileLine);
 				cout << mainInstructions.back() << " " << endl;
 			}
 		}
 
-		cout << currentInputFileLine << endl;
+		// Display
+		for (size_t i = 0; i < processes.size(); i++)
+		{
+			for (size_t j = 0; j < processes[i].instructions.size(); i++)
+			{
+				cout << "Process " << processes[i].processName << " has instruction: " << processes[i].instructions[j] << endl;
+			}
+		}
+		cout << endl;
+
+		//cout << currentInputFileLine << endl;
 	}
 }
 #pragma endregion
@@ -231,5 +311,113 @@ vector<int> ParseDataFileIntoInt(string delimiter, string delimiter2, string inp
 	parsedArray.push_back(stoi(inputString));
 
 	return parsedArray;
+}
+#pragma endregion
+
+#pragma region RemoveSpaces(): removes spaces in a string
+string RemoveSpaces(string input)
+{
+	//	Remove the spaces before the string
+	int foundIndex = input.find("p");
+	input.erase(0, foundIndex);
+	
+	//	Remove starting spaces from string so its easier to parse
+	int length = input.length();
+	for (int i = 0; i < length; i++) 
+	{
+		if (input[i] == ' ')
+		{
+			input.erase(i, 1);
+			length--;
+			i--;
+		}
+	}
+
+	return input;
+}
+#pragma endregion
+
+#pragma region Arithmetic solver: int result = expression(const char * expressionToParse);
+int number(const char * expressionToParse)
+{
+	int result = *expressionToParse++ - '0';
+	while (*expressionToParse >= '0' && *expressionToParse <= '9')
+	{
+		result = 10 * result + *expressionToParse++ - '0';
+	}
+	return result;
+}
+
+int factor(const char * expressionToParse)
+{
+	if (*expressionToParse >= '0' && *expressionToParse <= '9')
+		return number(expressionToParse);
+	else if (*expressionToParse == '(')
+	{
+		*expressionToParse++; // '('
+		int result = expression(expressionToParse);
+		*expressionToParse++; // ')'
+		return result;
+	}
+	else if (*expressionToParse == '-')
+	{
+		*expressionToParse++;
+		return -factor(expressionToParse);
+	}
+	return 0; // error
+}
+
+int term(const char * expressionToParse)
+{
+	int result = factor(expressionToParse);
+	while (*expressionToParse == '*' || *expressionToParse == '/')
+		if (*expressionToParse++ == '*')
+			result *= factor(expressionToParse);
+		else
+			result /= factor(expressionToParse);
+	return result;
+}
+
+int expression(const char * expressionToParse)
+{
+	int result = term(expressionToParse);
+	while (*expressionToParse == '+' || *expressionToParse == '-')
+		if (*expressionToParse++ == '+')
+			result += term(expressionToParse);
+		else
+			result -= term(expressionToParse);
+	return result;
+}
+#pragma endregion
+
+#pragma region ToCharArray(): converts string to char array
+char* ToCharArray(string input)
+{
+	//	Convert string to char array
+	char *stringToCharArray = new char[input.length() + 1];
+	strcpy(stringToCharArray, input.c_str());
+
+	return stringToCharArray;
+}
+#pragma endregion
+
+#pragma region ParseExpressionVariables: parses variables in the given expression string
+string ParseExpressionVariables(string inputString)
+{
+	for (size_t i = 0; i < inputString.length(); i++)
+	{
+		for (size_t j = 0; j < variables.size(); j++)
+		{
+			size_t pos = inputString.find(variables[j].variableName);
+			if (pos != -1)
+			{
+				cout << variables[j].variableName << " found at " << pos << endl;
+				inputString.replace(pos, pos + variables[j].variableName.length(), to_string(variables[j].value));
+				cout << inputString << endl;
+			}
+		}
+	}
+
+	return inputString;
 }
 #pragma endregion
