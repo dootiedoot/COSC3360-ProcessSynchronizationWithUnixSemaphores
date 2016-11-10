@@ -12,11 +12,11 @@
 using namespace std;
 
 /*
-Assignment 2
-COSC 3360 - Fundamentals of Operating Systems
-University of Houston
-Chad Hoang
-1176413
+	Assignment 2
+	COSC 3360 - Fundamentals of Operating Systems
+	University of Houston
+	Chad Hoang
+	1176413
 */
 
 // Variables
@@ -27,6 +27,8 @@ struct Variable							//	Structure of the variable
 };
 vector<Variable> variables;			
 vector<string> processes;				//	Array of input variables given by the data file
+vector<string> concurrentInstructions;	//	Array of instructions executed by the processes
+vector<string> mainInstructions;		//	Array of instructions executed by the the main process
 
 //	Methods
 void ReadFromFile(string codeFileName, string dataFileName);
@@ -102,8 +104,70 @@ void ReadFromFile(string codeFileName, string dataFileName)
 
 		// Display
 		for (size_t i = 0; i < variables.size(); i++)
-			cout << variables[i].variableName << ": " << variables[i].value << endl;
+			cout << "Variable " << variables[i].variableName << " has value " << variables[i].value << endl;
 		cout << endl;
+
+		//	Loop until "write" is found
+		while (true)
+		{
+			//	Fetch next line
+			getline(codeFile, currentInputFileLine);
+
+			//	if the current line contains "write" break loop
+			if (currentInputFileLine.find("write") != std::string::npos)
+				break;
+
+			//	else if, next line is cobegin. Loop until coend is found and cache all instructions between them
+			else if (currentInputFileLine.find("cobegin") != std::string::npos)
+			{
+				cout << "cobegin" << endl;
+				
+				while (true)
+				{
+					//	Fetch next line
+					getline(codeFile, currentInputFileLine);
+
+					//	if "coend" is found, break loop
+					if (currentInputFileLine.find("coend") != std::string::npos)
+					{
+						cout << "coend" << endl;
+						break;
+					}
+					//	else if nested "cobegin" is found, repeat loop
+					else if (currentInputFileLine.find("cobegin") != std::string::npos)
+					{
+						cout << "cobegin" << endl;
+						
+						while (true)
+						{
+							//	Fetch next line
+							getline(codeFile, currentInputFileLine);
+
+							//	if "coend" is found, break loop
+							if (currentInputFileLine.find("coend") != std::string::npos)
+							{
+								cout << "coend" << endl;
+								break;
+							}
+
+							concurrentInstructions.push_back(currentInputFileLine);
+							cout << concurrentInstructions.back() << " " << endl;
+						}
+					}
+
+					concurrentInstructions.push_back(currentInputFileLine);
+					cout << concurrentInstructions.back() << " " << endl;
+				}
+			}
+			//	else, the instruction is most likey a main instruction and will be cached
+			else
+			{
+				mainInstructions.push_back(currentInputFileLine);
+				cout << mainInstructions.back() << " " << endl;
+			}
+		}
+
+		cout << currentInputFileLine << endl;
 	}
 }
 #pragma endregion
