@@ -34,16 +34,17 @@ struct Process								//	Structure of the process
 };
 vector<Process> processes;					//	Array of processes given by the input file
 vector<string> mainInstructions;			//	Array of instructions executed by the the main process
+const char * expressionToParse;
 
 //	Methods
 void ReadFromFile(string codeFileName, string dataFileName);
 vector<string> ParseVariablesIntoString(string startingString, string delimiter, string inputString);
 vector<int> ParseDataFileIntoInt(string delimiter, string delimiter2, string inputString);
 string RemoveSpaces(string input);
-int number(const char * expressionToParse);
-int factor(const char * expressionToParse);
-int term(const char * expressionToParse);
-int expression(const char * expressionToParse);
+int number();
+int factor();
+int term();
+int ParseExpression();
 char* ToCharArray(string input);
 string ParseExpressionVariables(string inputString);
 
@@ -60,7 +61,8 @@ int main(int argc, char* argv[])
 
 	//cout << processes[0].instructions[0] << " equal " << expression(ToCharArray(processes[0].instructions[0])) << endl;
 	
-	cout << "1+1+1*5/5+(5+5)" << " equal " << expression("1+1+1*5/5+(5+5)") << endl;
+	expressionToParse = "(1+1)*5/10+5+2";
+	cout << "(1+1)*5/10+5+2" << " equals " << ParseExpression() << endl;
 
 	return 0;
 }
@@ -337,55 +339,67 @@ string RemoveSpaces(string input)
 }
 #pragma endregion
 
-#pragma region Arithmetic solver: int result = expression(const char * expressionToParse);
-int number(const char * expressionToParse)
+#pragma region Arithmetic solving methods
+char peek()
 {
-	int result = *expressionToParse++ - '0';
-	while (*expressionToParse >= '0' && *expressionToParse <= '9')
+	return *expressionToParse;
+}
+
+char get()
+{
+	return *expressionToParse++;
+}
+
+int ParseExpression();
+
+int number()
+{
+	int result = get() - '0';
+	while (peek() >= '0' && peek() <= '9')
 	{
-		result = 10 * result + *expressionToParse++ - '0';
+		result = 10 * result + get() - '0';
 	}
 	return result;
 }
 
-int factor(const char * expressionToParse)
+int factor()
 {
-	if (*expressionToParse >= '0' && *expressionToParse <= '9')
-		return number(expressionToParse);
-	else if (*expressionToParse == '(')
+	if (peek() >= '0' && peek() <= '9')
+		return number();
+	else if (peek() == '(')
 	{
-		*expressionToParse++; // '('
-		int result = expression(expressionToParse);
-		*expressionToParse++; // ')'
+		get(); // '('
+		int result = ParseExpression();
+		get(); // ')'
 		return result;
 	}
-	else if (*expressionToParse == '-')
+	else if (peek() == '-')
 	{
-		*expressionToParse++;
-		return -factor(expressionToParse);
+		get();
+		return -factor();
 	}
 	return 0; // error
 }
 
-int term(const char * expressionToParse)
+int term()
 {
-	int result = factor(expressionToParse);
-	while (*expressionToParse == '*' || *expressionToParse == '/')
-		if (*expressionToParse++ == '*')
-			result *= factor(expressionToParse);
+	int result = factor();
+	while (peek() == '*' || peek() == '/')
+		if (get() == '*')
+			result *= factor();
 		else
-			result /= factor(expressionToParse);
+			result /= factor();
 	return result;
 }
 
-int expression(const char * expressionToParse)
+int ParseExpression()
 {
-	int result = term(expressionToParse);
-	while (*expressionToParse == '+' || *expressionToParse == '-')
-		if (*expressionToParse++ == '+')
-			result += term(expressionToParse);
+	int result = term();
+	while (peek() == '+' || peek() == '-')
+		if (get() == '+')
+			result += term();
 		else
-			result -= term(expressionToParse);
+			result -= term();
 	return result;
 }
 #pragma endregion
