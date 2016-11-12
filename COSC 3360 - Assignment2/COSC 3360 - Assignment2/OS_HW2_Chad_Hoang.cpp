@@ -8,7 +8,6 @@
 #include <string>
 #include <string.h>
 #include <vector>
-#include <stack>
 
 using namespace std;
 
@@ -37,6 +36,7 @@ vector<string> mainInstructions;			//	Array of instructions executed by the the 
 const char * expressionToParse;
 
 //	Methods
+#pragma region Method initalization
 void ReadFromFile(string codeFileName, string dataFileName);
 vector<string> ParseVariablesIntoString(string startingString, string delimiter, string inputString);
 vector<int> ParseDataFileIntoInt(string delimiter, string delimiter2, string inputString);
@@ -47,6 +47,7 @@ float term();
 float ParseExpression();
 char* ToCharArray(string input);
 string ParseExpressionVariables(string inputString);
+#pragma endregion
 
 int main(int argc, char* argv[])
 {
