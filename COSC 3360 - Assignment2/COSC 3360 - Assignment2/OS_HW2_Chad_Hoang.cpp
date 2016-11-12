@@ -41,10 +41,10 @@ void ReadFromFile(string codeFileName, string dataFileName);
 vector<string> ParseVariablesIntoString(string startingString, string delimiter, string inputString);
 vector<int> ParseDataFileIntoInt(string delimiter, string delimiter2, string inputString);
 string RemoveSpaces(string input);
-int number();
-int factor();
-int term();
-int ParseExpression();
+float number();
+float factor();
+float term();
+float ParseExpression();
 char* ToCharArray(string input);
 string ParseExpressionVariables(string inputString);
 
@@ -63,13 +63,10 @@ int main(int argc, char* argv[])
 			processes[i].instructions[j] = ParseExpressionVariables(processes[i].instructions[j]);
 
 			expressionToParse = ToCharArray(processes[i].instructions[j]);
-			int result = ParseExpression();
+			float result = ParseExpression();
 			cout << "Process " << processes[i].processName << " instruction " << processes[i].instructions[j] << " equals " << result << endl << endl;
 		}
 	}
-	
-	//cout << processes[0].instructions[0] << " equal " << expression(ToCharArray(processes[0].instructions[0])) << endl;
-	
 
 	return 0;
 }
@@ -356,9 +353,9 @@ char get()
 	return *expressionToParse++;
 }
 
-int ParseExpression();
+float ParseExpression();
 
-int number()
+float number()
 {
 	int result = get() - '0';
 	while (peek() >= '0' && peek() <= '9')
@@ -368,14 +365,14 @@ int number()
 	return result;
 }
 
-int factor()
+float factor()
 {
 	if (peek() >= '0' && peek() <= '9')
 		return number();
 	else if (peek() == '(')
 	{
 		get(); // '('
-		int result = ParseExpression();
+		float result = ParseExpression();
 		get(); // ')'
 		return result;
 	}
@@ -387,9 +384,9 @@ int factor()
 	return 0; // error
 }
 
-int term()
+float term()
 {
-	int result = factor();
+	float result = factor();
 	while (peek() == '*' || peek() == '/')
 		if (get() == '*')
 			result *= factor();
@@ -398,9 +395,9 @@ int term()
 	return result;
 }
 
-int ParseExpression()
+float ParseExpression()
 {
-	int result = term();
+	float result = term();
 	while (peek() == '+' || peek() == '-')
 		if (get() == '+')
 			result += term();
