@@ -55,14 +55,21 @@ int main(int argc, char* argv[])
 	//	Read, Evaluate, and Assign variables based in the input .txt file supplied by command argument
 	ReadFromFile(argv[1], argv[2]);
 
-	processes[0].instructions[0] = ParseExpressionVariables(processes[0].instructions[0]);
-	
-	cout << processes[0].instructions[0] << endl;
+	//	Parse all instruction expressions for each process
+	for (size_t i = 0; i < processes.size(); i++)
+	{
+		for (size_t j = 0; j < processes[i].instructions.size(); j++)
+		{
+			processes[i].instructions[j] = ParseExpressionVariables(processes[i].instructions[j]);
 
+			expressionToParse = ToCharArray(processes[i].instructions[j]);
+			int result = ParseExpression();
+			cout << "Process " << processes[i].processName << " instruction " << processes[i].instructions[j] << " equals " << result << endl << endl;
+		}
+	}
+	
 	//cout << processes[0].instructions[0] << " equal " << expression(ToCharArray(processes[0].instructions[0])) << endl;
 	
-	expressionToParse = "(1+1)*5/10+5+2";
-	cout << "(1+1)*5/10+5+2" << " equals " << ParseExpression() << endl;
 
 	return 0;
 }
@@ -107,7 +114,6 @@ void ReadFromFile(string codeFileName, string dataFileName)
 			processes.push_back(newProcess);
 			processes[i].processName = inputProcesses[i];
 		}
-
 
 		//	Fetch next line
 		getline(codeFile, currentInputFileLine);
@@ -156,7 +162,7 @@ void ReadFromFile(string codeFileName, string dataFileName)
 			//	else if, next line is cobegin. Loop until coend is found and cache all instructions between them
 			else if (currentInputFileLine.find("cobegin") != std::string::npos)
 			{
-				cout << "cobegin" << endl;
+				//cout << "cobegin" << endl;
 				
 				while (true)
 				{
@@ -166,7 +172,7 @@ void ReadFromFile(string codeFileName, string dataFileName)
 					//	if "coend" is found, break loop
 					if (currentInputFileLine.find("coend") != std::string::npos)
 					{
-						cout << "coend" << endl;
+						//cout << "coend" << endl;
 						break;
 					}
 					//	else if nested "cobegin" is found, repeat loop
@@ -425,9 +431,13 @@ string ParseExpressionVariables(string inputString)
 			size_t pos = inputString.find(variables[j].variableName);
 			if (pos != -1)
 			{
-				cout << variables[j].variableName << " found at " << pos << endl;
-				inputString.replace(pos, pos + variables[j].variableName.length(), to_string(variables[j].value));
-				cout << inputString << endl;
+				//cout << variables[j].variableName << " found from " << pos << " to " << pos + variables[j].variableName.length() << endl;
+				inputString.replace(pos, variables[j].variableName.length(), to_string(variables[j].value));
+				//cout << variables[j].variableName << " found from " << pos << " to " << pos + variables[j].variableName.length() << endl;
+				//inputString.replace(pos, pos + variables[j].variableName.length(), to_string(variables[j].value));
+				//cout << "Updated expression: " << inputString << endl;
+				//cout << "length: " << inputString.length() << endl;
+				break;
 			}
 		}
 	}
