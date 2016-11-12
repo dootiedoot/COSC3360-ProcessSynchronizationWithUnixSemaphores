@@ -1,10 +1,12 @@
 #include <iostream>
 #include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
-#include <sstream>
 #include <string>
 #include <string.h>
 #include <vector>
@@ -30,6 +32,7 @@ struct Process								//	Structure of the process
 {
 	string processName;
 	vector<string> instructions;
+	float value;						//	The value that is assigned to this process given the instruction expression
 };
 vector<Process> processes;					//	Array of processes given by the input file
 vector<string> mainInstructions;			//	Array of instructions executed by the the main process
@@ -44,10 +47,17 @@ string RemoveSpaces(string input);
 float number();
 float factor();
 float term();
-float ParseExpression();
+float EvaluateExpression();
 char* ToCharArray(string input);
 string ParseExpressionVariables(string inputString);
 #pragma endregion
+
+union semun 
+{
+	int val;
+	struct semid_ds *buf;
+	ushort *array;
+};
 
 int main(int argc, char* argv[])
 {
@@ -56,18 +66,93 @@ int main(int argc, char* argv[])
 	//	Read, Evaluate, and Assign variables based in the input .txt file supplied by command argument
 	ReadFromFile(argv[1], argv[2]);
 
-	//	Parse all instruction expressions for each process
+	// Display
 	for (size_t i = 0; i < processes.size(); i++)
 	{
-		for (size_t j = 0; j < processes[i].instructions.size(); j++)
+		for (size_t j = 0; j < processes[i].instructions.size(); i++)
 		{
-			processes[i].instructions[j] = ParseExpressionVariables(processes[i].instructions[j]);
-
-			expressionToParse = ToCharArray(processes[i].instructions[j]);
-			float result = ParseExpression();
-			cout << "Process " << processes[i].processName << " instruction " << processes[i].instructions[j] << " equals " << result << endl << endl;
+			cout << "Process " << processes[i].processName << " has instruction: " << processes[i].instructions[j] << endl;
 		}
 	}
+	cout << endl;
+	for (size_t i = 0; i < mainInstructions.size(); i++)
+	{
+		cout << "Main process has instruction: " << mainInstructions[i] << endl;
+	}
+	cout << endl;
+
+	//	Create the semaphores
+	int semid;				/* semid of semaphore set */
+	key_t key = 1176413;	/* key to pass to semget() */
+	int nsems = 100;		/* nsems to pass to semget() */
+	char *data;
+	struct sembuf sb = { 0,-1,0 };
+
+	semid = semget(key, nsems, IPC_CREAT | 0666);
+	data = (char *)shmat(semid, (void *)0, 0);
+	//strcpy(data, "Testing string\n");
+
+	int processID;
+	int mainParentProcessID = getpid();
+
+	//	Create child fork() processes & assign a Process variable
+	Process currentProcess;
+	for (int i = 0; i < processes.size(); i++)
+	{
+		currentProcess = processes[i];
+
+		processID = fork();
+
+		if (getpid() != mainParentProcessID)
+			break;
+	}
+
+	//	Failed process
+	if (processID == -1)
+	{
+		perror("ERROR: unable to create process.");
+		exit(0);
+	}
+	//	CHILD process
+	else if (processID == 0)
+	{
+		//cout << "this is child process " << getpid() << " of " << currentProcess.processName << endl;
+		
+		//	Parse all instruction expressions for each instruction
+		for (size_t j = 0; j < currentProcess.instructions.size(); j++)
+		{
+			currentProcess.instructions[j] = ParseExpressionVariables(currentProcess.instructions[j]);
+
+			expressionToParse = ToCharArray(currentProcess.instructions[j]);
+			float result = EvaluateExpression();
+			cout << "Process " << currentProcess.processName << " instruction " << currentProcess.instructions[j] << " equals " << result << endl << endl;
+		}
+
+		sb.sem_op = -1; //Lock
+		semop(semid, (struct sembuf *)&sb, 1);
+
+		//strncat(data, "feeding form child\n", 20);
+
+		sb.sem_op = 1;//Unlock
+		semop(semid, (struct sembuf *)&sb, 1);
+		_Exit(0);
+	}
+	//	PARENT process
+	else
+	{
+		//cout << "this is parent process " << getpid() << endl;
+
+		sb.sem_op = -1; //Lock
+		semop(semid, (struct sembuf *)&sb, 1);
+
+		//strncat(data, "feeding form parent\n", 20);
+
+		sb.sem_op = 1;//Unlock
+		semop(semid, (struct sembuf *)&sb, 1);
+	}
+
+	//	Destroy the semaphores
+	semctl(semid, 0, IPC_RMID);
 
 	return 0;
 }
@@ -239,19 +324,8 @@ void ReadFromFile(string codeFileName, string dataFileName)
 
 				//	Add line to instructions array
 				mainInstructions.push_back(currentInputFileLine);
-				cout << mainInstructions.back() << " " << endl;
 			}
 		}
-
-		// Display
-		for (size_t i = 0; i < processes.size(); i++)
-		{
-			for (size_t j = 0; j < processes[i].instructions.size(); i++)
-			{
-				cout << "Process " << processes[i].processName << " has instruction: " << processes[i].instructions[j] << endl;
-			}
-		}
-		cout << endl;
 
 		//cout << currentInputFileLine << endl;
 	}
@@ -354,7 +428,7 @@ char get()
 	return *expressionToParse++;
 }
 
-float ParseExpression();
+float EvaluateExpression();
 
 float number()
 {
@@ -373,7 +447,7 @@ float factor()
 	else if (peek() == '(')
 	{
 		get(); // '('
-		float result = ParseExpression();
+		float result = EvaluateExpression();
 		get(); // ')'
 		return result;
 	}
@@ -396,7 +470,7 @@ float term()
 	return result;
 }
 
-float ParseExpression()
+float EvaluateExpression()
 {
 	float result = term();
 	while (peek() == '+' || peek() == '-')
@@ -429,17 +503,33 @@ string ParseExpressionVariables(string inputString)
 			size_t pos = inputString.find(variables[j].variableName);
 			if (pos != -1)
 			{
-				//cout << variables[j].variableName << " found from " << pos << " to " << pos + variables[j].variableName.length() << endl;
 				inputString.replace(pos, variables[j].variableName.length(), to_string(variables[j].value));
-				//cout << variables[j].variableName << " found from " << pos << " to " << pos + variables[j].variableName.length() << endl;
-				//inputString.replace(pos, pos + variables[j].variableName.length(), to_string(variables[j].value));
-				//cout << "Updated expression: " << inputString << endl;
-				//cout << "length: " << inputString.length() << endl;
 				break;
 			}
 		}
 	}
 
 	return inputString;
+}
+#pragma endregion
+
+#pragma region isAbleToSolveExpression: returns boolean determining if expression is solvable
+bool isAbleToSolveExpression(string inputString)
+{
+	bool isSolvable;
+	for (size_t i = 0; i < inputString.length(); i++)
+	{
+		for (size_t j = 0; j < variables.size(); j++)
+		{
+			size_t pos = inputString.find(variables[j].variableName);
+			if (pos != -1)
+			{
+				inputString.replace(pos, variables[j].variableName.length(), to_string(variables[j].value));
+				break;
+			}
+		}
+	}
+
+	return isSolvable;
 }
 #pragma endregion
