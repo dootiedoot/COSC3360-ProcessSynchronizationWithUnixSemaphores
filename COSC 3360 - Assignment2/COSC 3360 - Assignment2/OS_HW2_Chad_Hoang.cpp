@@ -62,7 +62,7 @@ union semun
 int main(int argc, char* argv[])
 {
 	cout << endl;
-	
+
 	//	Read, Evaluate, and Assign variables based in the input .txt file supplied by command argument
 	ReadFromFile(argv[1], argv[2]);
 
@@ -82,20 +82,20 @@ int main(int argc, char* argv[])
 	cout << endl;
 
 	//	Create the semaphores
-	int semid;				/* semid of semaphore set */
-	key_t key = 1176413;	/* key to pass to semget() */
-	int nsems = 100;		/* nsems to pass to semget() */
-	char *data;
-	struct sembuf sb = { 0,-1,0 };
+	int shmid;
+	char *shm;
+	key_t key = 1176413;
 
-	semid = semget(key, nsems, IPC_CREAT | 0666);
-	data = (char *)shmat(semid, (void *)0, 0);
-	//strcpy(data, "Testing string\n");
+	//	Create the shared memory segment
+	shmid = shmget(key, 77, IPC_CREAT | 0666);
+
+	//	Attch shared memory segment
+	shm = (char *)shmat(shmid, NULL, 0);
 
 	int processID;
 	int mainParentProcessID = getpid();
 
-	//	Create child fork() processes & assign a Process variable
+	//	Create fork() processes & assign a Process variable
 	Process currentProcess;
 	for (int i = 0; i < processes.size(); i++)
 	{
@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
 	//	CHILD process
 	else if (processID == 0)
 	{
-		//cout << "this is child process " << getpid() << " of " << currentProcess.processName << endl;
+		cout << "this is child process " << getpid() << " of " << currentProcess.processName << endl;
 		
 		//	Parse all instruction expressions for each instruction
 		for (size_t j = 0; j < currentProcess.instructions.size(); j++)
@@ -128,31 +128,21 @@ int main(int argc, char* argv[])
 			cout << "Process " << currentProcess.processName << " instruction " << currentProcess.instructions[j] << " equals " << result << endl << endl;
 		}
 
-		sb.sem_op = -1; //Lock
-		semop(semid, (struct sembuf *)&sb, 1);
+		//shm = 'b';
 
-		//strncat(data, "feeding form child\n", 20);
-
-		sb.sem_op = 1;//Unlock
-		semop(semid, (struct sembuf *)&sb, 1);
-		_Exit(0);
+		exit(0);
 	}
 	//	PARENT process
 	else
 	{
-		//cout << "this is parent process " << getpid() << endl;
-
-		sb.sem_op = -1; //Lock
-		semop(semid, (struct sembuf *)&sb, 1);
-
-		//strncat(data, "feeding form parent\n", 20);
-
-		sb.sem_op = 1;//Unlock
-		semop(semid, (struct sembuf *)&sb, 1);
+		cout << "this is parent process " << getpid() << endl;
+		
+		//strcat(shm, "");
+		cout << shm << endl;
 	}
 
 	//	Destroy the semaphores
-	semctl(semid, 0, IPC_RMID);
+	semctl(shmid, 0, IPC_RMID);
 
 	return 0;
 }
